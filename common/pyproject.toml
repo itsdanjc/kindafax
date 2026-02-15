@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kindafax-common"
+description = "Fax-like messaging system, using recept printers"
+version = "0.1.0"
+readme = "README.md"
+license = "GPL-3.0"
+authors = [
+    {name = "itsdanjc", email = "dan@itsdanjc.com"},
+]
+dependencies = []
+
+[tool.setuptools]
+package-dir = {"common" = "."}
+packages = ["common"]
