@@ -4,8 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "kindafax"
-description = "Fax-like messaging system, using recept printers"
-version = "0.1.0"
+description = "Client for Kindafax: A fax-like messaging system, using recept printers"
+dynamic = ["version"]
+requires-python = ">= 3.11"
 readme = "README.md"
 license = "GPL-3.0"
 authors = [
