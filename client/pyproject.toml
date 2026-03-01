@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kindafax"
+description = "Client for Kindafax: A fax-like messaging system, using recept printers"
+dynamic = ["version"]
+requires-python = ">= 3.11"
+readme = "README.md"
+license = "GPL-3.0"
+authors = [
+    {name = "itsdanjc", email = "dan@itsdanjc.com"},
+]
+dependencies = [
+    "kindafax-common",
+]
+
+[project.scripts]
+kindafax = "client.__main__:main"
+
+[tool.setuptools]
+package-dir = {"client" = "."}
+packages = ["client"]
+
