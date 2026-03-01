@@ -1,10 +1,12 @@
+import logging
 import sys
 import platform
-from typing import Final
+from pathlib import Path
+from typing import Final, Optional
 from common.config import Config
+from common.log import get_set_logger, get_handlers, get_level
 from common import __version__ as common_version
 from .__init__ import __version__
-from tomllib import TOMLDecodeError
 from argparse import ArgumentParser
 
 
@@ -31,39 +33,44 @@ def init_cli() -> ArgumentParser:
     cli = ArgumentParser(prog="kindafax", description=PROG_DESC)
     cli.add_argument("--version", action="store_true", help="display version info, then exit")
     cli.add_argument("-v", "--verbose", action="store_true", help="show more info in logs")
+    cli.add_argument("-l", "--log-file", action="store_true", help="log to a file, instead of stdout")
 
     return cli
+
+def init_log(verbose: bool, file: Optional[Path]) -> logging.Logger:
+    logger = get_set_logger("client")
+    logger.addHandler( get_handlers(file) )
+    logger.setLevel( get_level(verbose) )
+    return logger
 
 def main() -> int:
     arg_parser = init_cli()
     args = arg_parser.parse_args(sys.argv[1::])
 
-    print(VERSION_INFO)
-
     if args.version:
-        print(VERSION_INFO_VERBOSE)
+        print(
+            f"\n{VERSION_INFO}\n{VERSION_INFO_VERBOSE}\n",
+            file=sys.stdout
+        )
         return 0 # Version info already displayed, just exit.
 
-    if args.verbose:
-        print("Verbose mode enabled.")
+    print(f"\n{VERSION_INFO}\n\n", file=sys.stdout, end="")
 
-    while True:
-        pass
+    # Get Config
+    config = Config("client")
+    config.load()
 
-    # print(VERSION_INFO)
-    # config = Config("client")
-    # print(config.config_file_path)
-    #
-    # try:
-    #     config.load()
-    # except TOMLDecodeError as e:
-    #     errs = ", ".join(e.args)
-    #     print(f"Config {config.config_file_path} contains the following errors: {errs}")
-    #     return 1
-    # except ValueError:
-    #     print(f"Config at {config.config_file_path} is empty. See the documentation on how to configure.")
-    #     return 1
-    # return 0
+    # Configure Log
+    log_file: Optional[Path] = None
+
+    if args.log_file:
+        log_file = config.dirs.site_log_path
+        print(f"Log at {log_file}", file=sys.stdout)
+
+    logger = init_log(args.verbose, log_file)
+
+    input("\nPress any key to exit") # No event loop yet. Just exit after input.
+    return 0
 
 if __name__ == '__main__':
     main()
