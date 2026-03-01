@@ -113,4 +113,8 @@ class Config:
         config: dict
         with open(self.location, "rb") as f:
             config = tomllib.load(f)
+
+            if not config:
+                raise ValueError("Config files cannot be empty.")
+
         self.set(**config)

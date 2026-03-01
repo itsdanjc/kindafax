@@ -6,6 +6,7 @@ from typing import Final, Optional
 from common.config import Config
 from common.log import get_set_logger, get_handlers, get_level
 from common import __version__ as common_version
+from tomllib import TOMLDecodeError
 from .__init__ import __version__
 from argparse import ArgumentParser
 
@@ -29,6 +30,8 @@ VERSION_INFO_VERBOSE: Final[str] = (
     os_build=platform.version(),
 )
 
+logger: logging.Logger #Define here so we can use in methods
+
 def init_cli() -> ArgumentParser:
     cli = ArgumentParser(prog="kindafax", description=PROG_DESC)
     cli.add_argument("--version", action="store_true", help="display version info, then exit")
@@ -37,11 +40,32 @@ def init_cli() -> ArgumentParser:
 
     return cli
 
-def init_log(verbose: bool, file: Optional[Path]) -> logging.Logger:
+def init_log(verbose: bool, file: Optional[Path]) -> None:
+    global logger
+
     logger = get_set_logger("client")
     logger.addHandler( get_handlers(file) )
     logger.setLevel( get_level(verbose) )
-    return logger
+
+def init_config() -> Config:
+    config = Config("client")
+
+    try:
+        config.load()
+    except TOMLDecodeError as e:
+        logger.error(
+            "%s in %s",
+            "".join(e.args),
+            config.location
+        )
+
+    except ValueError as e:
+        logger.error(
+            "Config file is empty, see %s",
+            "https://kindafax.itsdanjc.com/docs/client/configuration.html"
+        )
+
+    return config
 
 def main() -> int:
     arg_parser = init_cli()
@@ -56,18 +80,18 @@ def main() -> int:
 
     print(f"\n{VERSION_INFO}\n\n", file=sys.stdout, end="")
 
-    # Get Config
-    config = Config("client")
-    config.load()
-
     # Configure Log
     log_file: Optional[Path] = None
 
     if args.log_file:
-        log_file = config.dirs.site_log_path
+        # log_file = config.dirs.site_log_path
         print(f"Log at {log_file}", file=sys.stdout)
 
-    logger = init_log(args.verbose, log_file)
+    init_log(args.verbose, log_file)
+
+
+    # Get Config
+    config = init_config()
 
     input("\nPress any key to exit") # No event loop yet. Just exit after input.
     return 0
