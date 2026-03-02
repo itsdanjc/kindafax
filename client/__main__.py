@@ -1,6 +1,7 @@
 import logging
 import sys
 import platform
+import time
 from pathlib import Path
 from typing import Final, Optional
 from common.config import Config
@@ -36,10 +37,44 @@ args:  ArgumentParser
 
 
 def run() -> int:
-    match args.command:     #type: ignore
-        case _:
-            print("")
-            return 0
+    try:
+        match args.command:     #type: ignore
+            case "auth":
+                pass
+
+            case _:
+                sys.exit(0)
+
+    except KeyboardInterrupt:
+        logger.debug("Exiting (Received signal from user)")
+        return 0
+
+    except SystemExit as e:
+        logger.debug("Exiting")
+        return e.code
+
+    except Exception as e:
+        #Ensure any unhandled exceptions are logged.
+        logger.exception(
+            "Unhandled %s(\"%s\")",
+            e.__class__.__name__,
+            "\", \"".join(e.args),
+            exc_info=e
+        )
+
+        if args.log: #type: ignore
+            print(
+                f"\nUnhandled {e.__class__.__name__}:",
+                ", ".join(e.args),
+                "(See log for details)",
+                file=sys.stderr
+            )
+
+        logger.debug("Exiting (Unhandled Exception)")
+        return 1
+
+    logger.debug("Exiting")
+    return 0
 
 
 def init_cli() -> ArgumentParser:
@@ -68,10 +103,6 @@ def init_cli() -> ArgumentParser:
         "--no-ansi", action="store_true",
         help="remove all styling in log (default when \"--log\" is enabled)"
     )
-    log_opts.add_argument(
-        "--no-log", action="store_true",
-        help="supress all log messages (NOT RECOMMENDED)"
-    )
 
     return cli
 
@@ -84,6 +115,8 @@ def add_cli_commands(parser: ArgumentParser) -> None:
 
     cmds = parser.add_subparsers(dest="command", required=False)
 
+    cmds.add_parser("auth")
+
 
 def init_log(verbose: bool, file: Optional[Path]) -> None:
     """
@@ -94,8 +127,14 @@ def init_log(verbose: bool, file: Optional[Path]) -> None:
     global logger
 
     logger = get_set_logger("client")
-    logger.addHandler(get_handlers(file))
-    logger.setLevel(get_level(verbose))
+
+    logger.addHandler(
+        get_handlers(file, not args.no_ansi) #type: ignore
+    )
+
+    logger.setLevel(
+        get_level(verbose)
+    )
 
 
 def init_config() -> None:

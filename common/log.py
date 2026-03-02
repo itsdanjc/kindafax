@@ -67,10 +67,12 @@ def get_set_logger(module: str) -> logging.Logger:
     )
 
 
-def get_handlers(out: Optional[Path] = None) -> LogHandler:
+def get_handlers(out: Optional[Path] = None, use_ansi: Optional[bool] = True) -> LogHandler:
     """
     Create a logger handler. Also define a formatter for messages.
 
+    :param use_ansi: Whether to use ANSI in logs. True by default.
+        Does not apply when logging to file, where this is always False.
     :param out: Optional path to log file. Otherwise, log to `stdout`.
     :return: `RotatingFileHandler` if logging to file, else `StreamHandler`
     """
@@ -78,7 +80,7 @@ def get_handlers(out: Optional[Path] = None) -> LogHandler:
     use_ansi: bool
 
     if out:
-        use_ansi = False
+        use_ansi = False # ANSI must be disabled when logging to file.
         handler = TimedRotatingFileHandler(
             filename = out.joinpath(LOGGER_FILE_NAME),
             when = "midnight",
@@ -90,7 +92,6 @@ def get_handlers(out: Optional[Path] = None) -> LogHandler:
             n.replace(".log", ""), ".log"
         )
     else:
-        use_ansi = True
         handler = logging.StreamHandler(sys.stdout)
 
     handler.setFormatter(
