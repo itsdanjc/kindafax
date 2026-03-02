@@ -10,7 +10,6 @@ from tomllib import TOMLDecodeError
 from .__init__ import __version__
 from argparse import ArgumentParser
 
-
 PROG_NAME: Final[str] = f"KindaFax Client"
 PROG_DESC: Final[str] = f"The client for KindaFax, A fax-like messaging system, using receipt printers."
 VERSION_INFO: Final[str] = f"{PROG_NAME} {__version__}"
@@ -30,26 +29,80 @@ VERSION_INFO_VERBOSE: Final[str] = (
     os_build=platform.version(),
 )
 
-logger: logging.Logger #Define here so we can use in methods
+#Define here so we can use in methods
+logger: logging.Logger
+config: Config
+args:  ArgumentParser
+
+
+def run() -> int:
+    match args.command:     #type: ignore
+        case _:
+            print("")
+            return 0
+
 
 def init_cli() -> ArgumentParser:
+    """
+    Initialize the CLI
+    """
+
     cli = ArgumentParser(prog="kindafax", description=PROG_DESC)
-    cli.add_argument("--version", action="store_true", help="display version info, then exit")
-    cli.add_argument("-v", "--verbose", action="store_true", help="show more info in logs")
-    cli.add_argument("-l", "--log-file", action="store_true", help="log to a file, instead of stdout")
+    add_cli_commands(cli)
+
+    cli.add_argument(
+        "--version", action="store_true",
+        help="display version info, then exit"
+    )
+
+    log_opts = cli.add_argument_group("options for logging")
+    log_opts.add_argument(
+        "-v", "--verbose", action="store_true",
+        help="show more information in logs"
+    )
+    log_opts.add_argument(
+        "--log", action="store_true",
+        help="log to file, instead of stdout (useful when running headless)"
+    )
+    log_opts.add_argument(
+        "--no-ansi", action="store_true",
+        help="remove all styling in log (default when \"--log\" is enabled)"
+    )
+    log_opts.add_argument(
+        "--no-log", action="store_true",
+        help="supress all log messages (NOT RECOMMENDED)"
+    )
 
     return cli
 
+
+def add_cli_commands(parser: ArgumentParser) -> None:
+    """
+    Add commands to CLI
+    :param parser:
+    """
+
+    cmds = parser.add_subparsers(dest="command", required=False)
+
+
 def init_log(verbose: bool, file: Optional[Path]) -> None:
+    """
+    Initialize the logger.
+    :param verbose: Whether to enable verbose logging
+    :param file: Optional path to log file directory
+    """
     global logger
 
     logger = get_set_logger("client")
-    logger.addHandler( get_handlers(file) )
-    logger.setLevel( get_level(verbose) )
+    logger.addHandler(get_handlers(file))
+    logger.setLevel(get_level(verbose))
 
-def init_config() -> Config:
-    config = Config("client")
 
+def init_config() -> None:
+    """
+    Wrapper for ``config.load()``.
+    :return:
+    """
     try:
         config.load()
     except TOMLDecodeError as e:
@@ -65,9 +118,13 @@ def init_config() -> Config:
             "https://kindafax.itsdanjc.com/docs/client/configuration.html"
         )
 
-    return config
 
 def main() -> int:
+    """
+    Entrypoint for KindaFax client
+    :return: Exit code
+    """
+    global args
     arg_parser = init_cli()
     args = arg_parser.parse_args(sys.argv[1::])
 
@@ -76,25 +133,26 @@ def main() -> int:
             f"\n{VERSION_INFO}\n{VERSION_INFO_VERBOSE}\n",
             file=sys.stdout
         )
-        return 0 # Version info already displayed, just exit.
+        return 0  # Version info already displayed, just exit.
 
     print(f"\n{VERSION_INFO}\n\n", file=sys.stdout, end="")
+
+    global config
+    config = Config("client")
 
     # Configure Log
     log_file: Optional[Path] = None
 
-    if args.log_file:
-        # log_file = config.dirs.site_log_path
+    if args.log:
+        log_file = config.dirs.site_log_path
         print(f"Log at {log_file}", file=sys.stdout)
 
     init_log(args.verbose, log_file)
 
-
     # Get Config
-    config = init_config()
+    init_config()
 
-    input("\nPress any key to exit") # No event loop yet. Just exit after input.
-    return 0
+    return run()
 
 if __name__ == '__main__':
     main()
