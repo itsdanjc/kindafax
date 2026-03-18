@@ -14,6 +14,7 @@ authors = [
 ]
 dependencies = [
     "kindafax-common",
+    "werkzeug"
 ]
 
 [project.scripts]

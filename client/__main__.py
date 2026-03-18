@@ -1,12 +1,12 @@
 import logging
 import sys
 import platform
-import time
 from pathlib import Path
 from typing import Final, Optional
 from common.config import Config
 from common.log import get_set_logger, get_handlers, get_level
 from common import __version__ as common_version
+from client.cli.auth import auth
 from tomllib import TOMLDecodeError
 from .__init__ import __version__
 from argparse import ArgumentParser
@@ -38,10 +38,9 @@ args:  ArgumentParser
 
 def run() -> int:
     try:
-        match args.command:     #type: ignore
+        match args.command: #type: ignore
             case "auth":
-                pass
-
+                auth(config)
             case _:
                 sys.exit(0)
 
